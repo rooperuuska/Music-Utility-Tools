@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Harmonic Frequency Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #c88d94;
+      padding: 2em;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    label, select {
+      font-size: 1.1em;
+      margin-right: 1em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 0.5em;
+      text-align: center;
+    }
+    .undertone {
+      background-color: #b37a81;
+    }
+    .base {
+      font-weight: bold;
+      background-color: #c88d94;
+    }
+    .overtone {
+      background-color: #deb2b7;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Harmonic Frequency Calculator</h1>
+
+<label for="note">Note:</label>
+<select id="note">
+  <option value="C">C</option>
+  <option value="C#">C♯ / D♭</option>
+  <option value="D">D</option>
+  <option value="D#">D♯ / E♭</option>
+  <option value="E">E</option>
+  <option value="F">F</option>
+  <option value="F#">F♯ / G♭</option>
+  <option value="G">G</option>
+  <option value="G#">G♯ / A♭</option>
+  <option value="A">A</option>
+  <option value="A#">A♯ / B♭</option>
+  <option value="B">B</option>
+</select>
+
+<label for="octave">Octave:</label>
+<select id="octave">
+  <option value="0">0</option>
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+  <option value="4" selected>4</option>
+  <option value="5">5</option>
+  <option value="6">6</option>
+  <option value="7">7</option>
+  <option value="8">8</option>
+</select>
+
+<button onclick="calculate()">Calculate</button>
+
+<table id="harmonicTable">
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Harmonic</th>
+      <th>Ratio</th>
+      <th>Frequency (Hz)</th>
+      <th>Comment</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const noteFrequencies = {
+    'C': 261.63,
+    'C#': 277.18,
+    'D': 293.66,
+    'D#': 311.13,
+    'E': 329.63,
+    'F': 349.23,
+    'F#': 369.99,
+    'G': 392.00,
+    'G#': 415.30,
+    'A': 440.00,
+    'A#': 466.16,
+    'B': 493.88
+  };
+
+  const commentMap = {
+    1: "Fundamental",
+    2: "Octave",
+    3: "Perfect fifth – key harmonic",
+    4: "Two octaves",
+    5: "Major third – defines major chord",
+    6: "Completes major triad (C–E–G)",
+    7: "Bluesy flat 7th – not in equal temperament",
+    8: "Third octave – reinforcing tone",
+    9: "Major 2nd – adds color",
+    11: "Microtonal – between F and F#",
+    13: "Ambiguous – between minor & major 6th",
+    15: "Major 7th – slightly flat in pure tuning",
+    16: "Fourth octave – pure reinforcement"
+  };
+
+  function calculate() {
+    const note = document.getElementById("note").value;
+    const octave = parseInt(document.getElementById("octave").value);
+    const baseFreq = noteFrequencies[note] * Math.pow(2, octave - 4);
+    const undertones = 5;
+    const overtones = 16;
+    const tableBody = document.querySelector("#harmonicTable tbody");
+    tableBody.innerHTML = "";
+
+    // Undertones
+    for (let i = undertones; i >= 2; i--) {
+      const freq = baseFreq / i;
+      const row = document.createElement("tr");
+      row.className = "undertone";
+      row.innerHTML = `
+        <td>Undertone</td>
+        <td>${i}</td>
+        <td>1:${i}</td>
+        <td>${freq.toFixed(2)}</td>
+        <td></td>
+      `;
+      tableBody.appendChild(row);
+    }
+
+    // Base
+    const baseRow = document.createElement("tr");
+    baseRow.className = "base";
+    baseRow.innerHTML = `
+      <td>Base</td>
+      <td>1</td>
+      <td>1:1</td>
+      <td>${baseFreq.toFixed(2)}</td>
+      <td>${commentMap[1]}</td>
+    `;
+    tableBody.appendChild(baseRow);
+
+    // Overtones
+    for (let i = 2; i <= overtones; i++) {
+      const freq = baseFreq * i;
+      const comment = commentMap[i] || "";
+      const row = document.createElement("tr");
+      row.className = "overtone";
+      row.innerHTML = `
+        <td>Overtone</td>
+        <td>${i}</td>
+        <td>${i}:1</td>
+        <td>${freq.toFixed(2)}</td>
+        <td>${comment}</td>
+      `;
+      tableBody.appendChild(row);
+    }
+  }
+</script>
+
+</body>
+</html>
