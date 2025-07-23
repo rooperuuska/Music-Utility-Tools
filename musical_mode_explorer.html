@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Musical Mode Explorer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #7C8B95;
+      padding: 2em;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    label, select {
+      font-size: 1.1em;
+      margin-right: 1em;
+    }
+    .piano {
+      position: relative;
+      width: 560px;
+      height: 120px;
+      margin: 2em auto;
+    }
+    .white-key {
+      width: 40px;
+      height: 120px;
+      background: white;
+      border: 1px solid #333;
+      box-sizing: border-box;
+      position: absolute;
+      z-index: 0;
+    }
+    .white-key.active {
+      background: #ffe873;
+    }
+    .black-key {
+      width: 25px;
+      height: 80px;
+      background: black;
+      position: absolute;
+      z-index: 1;
+    }
+    .black-key.active {
+      background: #d2b030;
+    }
+    .chord-piano-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1em;
+      margin-top: 1em;
+      justify-content: center;
+    }
+    .chord-block {
+      text-align: center;
+    }
+.chord-label {
+  font-size: 0.9em;
+  margin-bottom: 0.2em;
+  display: block;
+  color: #fff;
+  text-align: center;
+    }
+    .chord-piano {
+      position: relative;
+      width: 168px;
+      height: 36px;
+      margin: auto;
+    }
+    .chord-white-key {
+      width: 12px;
+      height: 36px;
+      background: white;
+      border: 1px solid #333;
+      box-sizing: border-box;
+      position: absolute;
+    }
+    .chord-white-key.active {
+      background: #ffe873;
+    }
+    .chord-black-key {
+      width: 7px;
+      height: 24px;
+      background: black;
+      position: absolute;
+      z-index: 1;
+    }
+    .chord-black-key.active {
+      background: #d2b030;
+    }
+    .mode-description, .example-songs {
+      color: white;
+      margin-bottom: 1em;
+    }
+    .example-songs a {
+      color: #e0f0ff;
+      text-decoration: none;
+    }
+    .example-songs a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Musical Mode Explorer</h1>
+
+<label for="key">Key:</label>
+<select id="key">
+  <option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option>
+  <option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option>
+  <option>A#</option><option>B</option>
+</select>
+
+<label for="mode">Mode:</label>
+<select id="mode">
+  <option value="0">Ionian (Major)</option>
+  <option value="1">Dorian</option>
+  <option value="2">Phrygian</option>
+  <option value="3">Lydian</option>
+  <option value="4">Mixolydian</option>
+  <option value="5">Aeolian (Minor)</option>
+  <option value="6">Locrian</option>
+</select>
+
+<button onclick="showMode()">Show Mode</button>
+
+<h2 id="scaleTitle"></h2>
+<div class="mode-description" id="modeDescription"></div>
+<div class="example-songs" id="exampleSongs"></div>
+<p id="notes"></p>
+<div class="piano" id="piano"></div>
+<div class="chord-piano-container" id="chordVisuals"></div>
+
+<script>
+  const chromatic = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const intervals = [2, 2, 1, 2, 2, 2, 1];
+  const modeNames = ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian'];
+  const chordQualities = [
+    ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'],
+    ['min', 'min', 'maj', 'maj', 'min', 'dim', 'maj'],
+    ['min', 'maj', 'maj', 'min', 'dim', 'maj', 'min'],
+    ['maj', 'maj', 'min', 'dim', 'maj', 'min', 'min'],
+    ['maj', 'min', 'dim', 'maj', 'min', 'min', 'maj'],
+    ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj'],
+    ['dim', 'maj', 'min', 'min', 'maj', 'maj', 'min']
+  ];
+  const modeDescriptions = [
+    { mnemonic: "Cheese", flavour: "Set the scene, all is good, resolution, happiness." },
+    { mnemonic: "Does Everything", flavour: "Take me seriously, worrying, intense, time to act, this sh*t is about to get real." },
+    { mnemonic: "Exotic", flavour: "Mystical, unusual, unsettling, slightly dark." },
+    { mnemonic: "Forever Hollywood", flavour: "Positive & happy with a sparkly hint of adventure." },
+    { mnemonic: "Good for Romcoms", flavour: "Doing something positive with no guarantee of a positive outcome." },
+    { mnemonic: "Always Sad", flavour: "Loss, loneliness, no hope." },
+    { mnemonic: "Broken", flavour: "Totally ambivalent with no chance of a satisfying resolution." }
+  ];
+const spotifyExamples = [
+  // Ionian (Major)
+  [
+    { title: "God Only Knows – The Beach Boys" },
+    { title: "Mr. Blue Sky – Electric Light Orchestra" },
+    { title: "Ob-La-Di, Ob-La-Da – The Beatles" },
+    { title: "Dreams – Fleetwood Mac" },
+    { title: "Here Comes the Sun – The Beatles" }
+  ],
+
+  // Dorian
+  [
+    { title: "So What – Miles Davis" },
+    { title: "Billie’s Bounce – Charlie Parker" },
+    { title: "Get Lucky – Daft Punk" },
+    { title: "Aja – Steely Dan" },
+    { title: "Scarborough Fair – Simon & Garfunkel" }
+  ],
+
+  // Phrygian
+  [
+    { title: "White Rabbit – Jefferson Airplane" },
+    { title: "Misirlou – Dick Dale" },
+    { title: "Acrid Avid Jam Shred – Aphex Twin" },
+    { title: "The Host of Seraphim – Dead Can Dance" },
+    { title: "Set the Controls for the Heart of the Sun – Pink Floyd" }
+  ],
+
+  // Lydian
+[
+  { title: "Blue in Green – Miles Davis" },
+  { title: "Forever Ago – Bon Iver" },
+  { title: "Walking on Sunshine – Katrina and the Waves" },
+  { title: "Little Dreamer – Future Islands" },
+  { title: "My Girls – Animal Collective" }
+],
+
+  // Mixolydian
+  [
+    { title: "Graceland – Paul Simon" },
+    { title: "Norwegian Wood – The Beatles" },
+    { title: "Loser – Beck" },
+    { title: "Fire on the Mountain – Grateful Dead" },
+    { title: "Suspirium – Thom Yorke" }
+  ],
+
+  // Aeolian (Minor)
+  [
+    { title: "All I Need – Radiohead" },
+    { title: "Nude – Björk" },
+    { title: "Space Oddity – David Bowie" },
+    { title: "Mad World – Gary Jules" },
+    { title: "Losing My Religion – R.E.M." }
+  ],
+
+  // Locrian
+  [
+    { title: "Army of Me – Björk" },
+    { title: "Angel of Death – Slayer" },
+    { title: "Requiem – György Ligeti" },
+    { title: "Come to Daddy – Aphex Twin" },
+    { title: "Black Sabbath – Black Sabbath" }
+  ]
+];
+
+
+  function showMode() {
+    const key = document.getElementById("key").value;
+    const mode = parseInt(document.getElementById("mode").value);
+
+    let startIndex = chromatic.indexOf(key);
+    let scale = [chromatic[startIndex]];
+    let pointer = startIndex;
+    for (let i = 0; i < 6; i++) {
+      pointer = (pointer + intervals[(i + mode) % 7]) % 12;
+      scale.push(chromatic[pointer]);
+    }
+
+    document.getElementById("scaleTitle").innerText = `${key} ${modeNames[mode]} Mode`;
+    const desc = modeDescriptions[mode];
+    document.getElementById("modeDescription").innerHTML =
+      `<strong>Mnemonic:</strong> ${desc.mnemonic}<br><strong>Flavour:</strong> ${desc.flavour}`;
+
+const examples = spotifyExamples[mode]
+  .map(e => `${e.title}`)
+  .join("<br>");
+    document.getElementById("exampleSongs").innerHTML =
+      `<strong>Examples:</strong><br>${examples}`;
+
+    document.getElementById("notes").innerText = `Notes: ${scale.join(' – ')}`;
+    const chords = scale.map((note, i) => `${note} ${chordQualities[mode][i]}`);
+
+    const piano = document.getElementById("piano");
+    piano.innerHTML = '';
+    const whiteNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const blackOffsets = { 'C#': 25, 'D#': 65, 'F#': 145, 'G#': 185, 'A#': 225 };
+    let whiteIndex = 0;
+    for (let i = 0; i < 14; i++) {
+      const note = chromatic[i % 12];
+      if (!note.includes('#')) {
+        const keyDiv = document.createElement("div");
+        keyDiv.className = "white-key";
+        keyDiv.style.left = `${whiteIndex * 40}px`;
+        if (scale.includes(note)) keyDiv.classList.add("active");
+        piano.appendChild(keyDiv);
+        whiteIndex++;
+      }
+    }
+    Object.keys(blackOffsets).forEach((note) => {
+      const keyDiv = document.createElement("div");
+      keyDiv.className = "black-key";
+      keyDiv.style.left = `${blackOffsets[note]}px`;
+      if (scale.includes(note)) keyDiv.classList.add("active");
+      piano.appendChild(keyDiv);
+    });
+
+    const chordVisuals = document.getElementById("chordVisuals");
+    chordVisuals.innerHTML = '';
+    chords.forEach((label) => {
+      const [root, quality] = label.split(' ');
+      const triad = buildTriad(root, quality);
+      const block = document.createElement('div');
+      block.className = 'chord-block';
+
+      const name = document.createElement('span');
+      name.className = 'chord-label';
+      name.innerText = label;
+
+      const visual = document.createElement('div');
+      visual.className = 'chord-piano';
+
+      let whiteI = 0;
+      chromatic.forEach(note => {
+        if (!note.includes('#')) {
+          const key = document.createElement('div');
+          key.className = 'chord-white-key';
+          key.style.left = `${whiteI * 12}px`;
+          if (triad.includes(note)) key.classList.add('active');
+          visual.appendChild(key);
+          whiteI++;
+        }
+      });
+
+      const blackX = { 'C#': 8, 'D#': 20, 'F#': 44, 'G#': 56, 'A#': 68 };
+      Object.entries(blackX).forEach(([note, x]) => {
+        const key = document.createElement('div');
+        key.className = 'chord-black-key';
+        key.style.left = `${x}px`;
+        if (triad.includes(note)) key.classList.add('active');
+        visual.appendChild(key);
+      });
+
+      block.appendChild(name);
+      block.appendChild(visual);
+      chordVisuals.appendChild(block);
+    });
+  }
+
+  function buildTriad(root, quality) {
+    const i = chromatic.indexOf(root);
+    if (i < 0) return [];
+    const intervalMap = {
+      'maj': [0, 4, 7],
+      'min': [0, 3, 7],
+      'dim': [0, 3, 6]
+    };
+    return intervalMap[quality].map(offset => chromatic[(i + offset) % 12]);
+  }
+</script>
+
+
+</body>
+</html>
