@@ -286,27 +286,54 @@ const examples = spotifyExamples[mode]
 
       const visual = document.createElement('div');
       visual.className = 'chord-piano';
+const keyWidth = 12;
+const blackOffset = 8;
+const rootIndex = chromatic.indexOf(root);
+const viewRange = Array.from({ length: 13 }, (_, j) => (rootIndex - 1 + j + 12) % 12);
 
-      let whiteI = 0;
-      chromatic.forEach(note => {
-        if (!note.includes('#')) {
-          const key = document.createElement('div');
-          key.className = 'chord-white-key';
-          key.style.left = `${whiteI * 12}px`;
-          if (triad.includes(note)) key.classList.add('active');
-          visual.appendChild(key);
-          whiteI++;
-        }
-      });
+const keyMap = []; // store visible keys in render order
+let whiteX = 0;
 
-      const blackX = { 'C#': 8, 'D#': 20, 'F#': 44, 'G#': 56, 'A#': 68 };
-      Object.entries(blackX).forEach(([note, x]) => {
-        const key = document.createElement('div');
-        key.className = 'chord-black-key';
-        key.style.left = `${x}px`;
-        if (triad.includes(note)) key.classList.add('active');
-        visual.appendChild(key);
-      });
+viewRange.forEach(index => {
+  const note = chromatic[index];
+  if (!note.includes('#')) {
+    keyMap.push({ note, type: 'white', x: whiteX });
+    whiteX += keyWidth;
+  }
+});
+
+// Then insert black keys between whites
+for (let i = 0; i < viewRange.length - 1; i++) {
+  const current = chromatic[viewRange[i]];
+  const next = chromatic[viewRange[i + 1]];
+  if (!current.includes('#') && next.includes('#')) {
+    const x = keyMap.find(k => k.note === current)?.x ?? 0;
+    keyMap.push({ note: next, type: 'black', x: x + blackOffset });
+  }
+}
+
+// Sort final visual order by x position
+keyMap.sort((a, b) => a.x - b.x);
+
+// Track activated triad notes
+const activated = new Set();
+
+// Render keys
+keyMap.forEach(({ note, type, x }) => {
+  const key = document.createElement('div');
+  key.className = type === 'white' ? 'chord-white-key' : 'chord-black-key';
+  key.style.left = `${x}px`;
+
+  if (triad.includes(note) && !activated.has(note)) {
+    key.classList.add('active');
+    activated.add(note);
+  }
+
+  visual.appendChild(key);
+});
+
+
+
 
       block.appendChild(name);
       block.appendChild(visual);
